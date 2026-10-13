@@ -11,20 +11,22 @@ export type Params = Map<string, Value[][]>;
 // Without detachNorms, gradient x input through a scale-invariant norm reaches 0, which hides earlier positions.
 export interface Recorder { inputs: Value[][]; attn: number[][][]; detachNorms?: boolean }
 
+// [name, rows, cols] in the order used by flatParams and snapshots.
+export function paramShapes(cfg: Config, vocabSize: number): Array<[string, number, number]> {
+  const shapes: Array<[string, number, number]> = [
+    ['wte', vocabSize, cfg.nEmbd], ['wpe', cfg.blockSize, cfg.nEmbd], ['lm_head', vocabSize, cfg.nEmbd],
+  ];
+  for (let i = 0; i < cfg.nLayer; i++) {
+    for (const k of ['attn_wq', 'attn_wk', 'attn_wv', 'attn_wo']) shapes.push([`layer${i}.${k}`, cfg.nEmbd, cfg.nEmbd]);
+    shapes.push([`layer${i}.mlp_fc1`, 4 * cfg.nEmbd, cfg.nEmbd], [`layer${i}.mlp_fc2`, cfg.nEmbd, 4 * cfg.nEmbd]);
+  }
+  return shapes;
+}
+
 // Without an rng all weights are zero, ready to be filled from a snapshot.
 export function initParams(cfg: Config, vocabSize: number, rng?: () => number): Params {
-  const matrix = (nout: number, nin: number) => Array.from({ length: nout }, () =>
-    Array.from({ length: nin }, () => new Value(rng ? gauss(rng, 0.08) : 0)));
-  const p: Params = new Map();
-  p.set('wte', matrix(vocabSize, cfg.nEmbd));
-  p.set('wpe', matrix(cfg.blockSize, cfg.nEmbd));
-  p.set('lm_head', matrix(vocabSize, cfg.nEmbd));
-  for (let i = 0; i < cfg.nLayer; i++) {
-    for (const k of ['attn_wq', 'attn_wk', 'attn_wv', 'attn_wo']) p.set(`layer${i}.${k}`, matrix(cfg.nEmbd, cfg.nEmbd));
-    p.set(`layer${i}.mlp_fc1`, matrix(4 * cfg.nEmbd, cfg.nEmbd));
-    p.set(`layer${i}.mlp_fc2`, matrix(cfg.nEmbd, 4 * cfg.nEmbd));
-  }
-  return p;
+  return new Map(paramShapes(cfg, vocabSize).map(([name, nout, nin]) => [name,
+    Array.from({ length: nout }, () => Array.from({ length: nin }, () => new Value(rng ? gauss(rng, 0.08) : 0)))]));
 }
 
 export const flatParams = (p: Params): Value[] => [...p.values()].flat(2);
@@ -40,7 +42,7 @@ export function softmax(logits: Value[]): Value[] {
 
 function rmsnorm(x: Value[], detach = false): Value[] {
   if (detach) {
-    const scale = (x.reduce((s, xi) => s + xi.data * xi.data, 0) / x.length + 1e-5) ** -0.5;
+    const scale = (x.reduce((s, xi) => s + xi.data * xi.data, 0) * (1 / x.length) + 1e-5) ** -0.5;
     return x.map(xi => mul(xi, scale));
   }
   const ms = mul(sum(x.map(xi => mul(xi, xi))), 1 / x.length);

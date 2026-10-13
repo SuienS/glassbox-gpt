@@ -1,8 +1,7 @@
 import type { Config } from '../engine/model';
 import type { Explanation } from '../workers/protocol';
-import { loadParams } from '../engine/serialize';
-import { checkQuery, recordForward, softmaxNumbers } from './forward';
-import { attribute } from './attribute';
+import { checkQuery, softmaxNumbers } from './forward';
+import { attribute, attributeWithForward } from './attribute';
 
 // Attention rollout: mix each layer's head-mean attention with the identity (for the residual),
 // then chain the layers to see how much each input position can reach position t.
@@ -28,10 +27,10 @@ export function rollout(rows: number[][][][], t: number): number[] {
 export function explain(w: Float64Array, cfg: Config, vocabSize: number,
                         tokens: number[], t: number, c: number, cPrime?: number): Explanation {
   checkQuery(cfg, vocabSize, tokens, t, c, cPrime);
-  const { logits, attn, rows } = recordForward(loadParams(w, cfg, vocabSize), cfg, tokens, t);
+  const { logits, attn, rows, scores } = attributeWithForward(w, cfg, vocabSize, tokens, t, c);
   const z = logits.map(l => l.data);
   const topK = softmaxNumbers(z).map((p, token) => ({ token, p })).sort((a, b) => b.p - a.p).slice(0, 5);
-  const s = attribute(w, cfg, vocabSize, tokens, t, c).map(Math.abs);
+  const s = scores.map(Math.abs);
   const total = s.reduce((a, b) => a + b, 0) || 1;
   const heads = attn[cfg.nLayer - 1];
   return {
