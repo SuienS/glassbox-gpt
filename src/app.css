@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+:root {
+  --canvas: var(--color-stone-50);
+  --panel: var(--color-white);
+  --ink: var(--color-stone-900);
+  --muted: var(--color-stone-500);
+  --line: var(--color-stone-200);
+  --accent: oklch(0.5 0.13 255);
+  --accent-ink: var(--color-white);
+  --danger: var(--color-red-700);
+  --warn: var(--color-amber-700);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: var(--color-stone-950);
+    --panel: var(--color-stone-900);
+    --ink: var(--color-stone-100);
+    --muted: var(--color-stone-400);
+    --line: var(--color-stone-800);
+    --accent: oklch(0.72 0.12 255);
+    --accent-ink: var(--color-stone-950);
+    --danger: var(--color-red-400);
+    --warn: var(--color-amber-400);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-line bg-panel px-3 py-1.5 text-sm font-medium
+      hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-transparent bg-accent text-accent-ink hover:bg-accent/90;
+  }
+}

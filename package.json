@@ -5,18 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run tests/unit",
     "test:watch": "vitest tests/unit",
-    "test:slow": "vitest run tests/slow"
+    "test:slow": "vitest run tests/slow",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/d3-scale-chromatic": "^3.1.0",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.6",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.4"
   },
   "dependencies": {
+    "d3-scale-chromatic": "^3.1.0",
     "uplot": "^1.6.32"
   }
 }
