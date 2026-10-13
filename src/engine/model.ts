@@ -6,8 +6,10 @@ export const DEFAULT_CONFIG: Config = { nEmbd: 16, nHead: 4, nLayer: 1, blockSiz
 
 export type Params = Map<string, Value[][]>;
 
-// inputs[pos]: normalised embedding; attn[layer][head][s]: weights at the latest position
-export interface Recorder { inputs: Value[][]; attn: number[][][] }
+// inputs[pos]: normalised embedding; attn[layer][head][s]: weights at the latest position.
+// detachNorms treats rmsnorm scales as constants in the backward pass (forward values are unchanged).
+// Without it, gradient x input through a scale-invariant norm is ~0, which hides earlier positions.
+export interface Recorder { inputs: Value[][]; attn: number[][][]; detachNorms?: boolean }
 
 // Without an rng all weights are zero, ready to be filled from a snapshot.
 export function initParams(cfg: Config, vocabSize: number, rng?: () => number): Params {
@@ -36,7 +38,11 @@ export function softmax(logits: Value[]): Value[] {
   return exps.map(e => div(e, total));
 }
 
-function rmsnorm(x: Value[]): Value[] {
+function rmsnorm(x: Value[], detach = false): Value[] {
+  if (detach) {
+    const scale = (x.reduce((s, xi) => s + xi.data * xi.data, 0) / x.length + 1e-5) ** -0.5;
+    return x.map(xi => mul(xi, scale));
+  }
   const ms = mul(sum(x.map(xi => mul(xi, xi))), 1 / x.length);
   const scale = pow(add(ms, 1e-5), -0.5);
   return x.map(xi => mul(xi, scale));
@@ -46,14 +52,14 @@ export function gpt(p: Params, cfg: Config, tokenId: number, posId: number,
                     keys: Value[][][], values: Value[][][], rec?: Recorder): Value[] {
   const headDim = cfg.nEmbd / cfg.nHead;
   const tok = p.get('wte')![tokenId], pos = p.get('wpe')![posId];
-  let x = rmsnorm(tok.map((t, i) => add(t, pos[i])));
-  // Recorded after the norm: rmsnorm is scale-invariant, so grad x input before it is ~0.
+  const detach = rec?.detachNorms ?? false;
+  let x = rmsnorm(tok.map((t, i) => add(t, pos[i])), detach);
   rec?.inputs.push(x);
   for (let li = 0; li < cfg.nLayer; li++) {
     const W = (k: string) => p.get(`layer${li}.${k}`)!;
 
     let residual = x;
-    x = rmsnorm(x);
+    x = rmsnorm(x, detach);
     const q = linear(x, W('attn_wq')), k = linear(x, W('attn_wk')), v = linear(x, W('attn_wv'));
     keys[li].push(k); values[li].push(v);
     const out: Value[] = [];
@@ -68,7 +74,7 @@ export function gpt(p: Params, cfg: Config, tokenId: number, posId: number,
     x = linear(out, W('attn_wo')).map((a, i) => add(a, residual[i]));
 
     residual = x;
-    x = linear(rmsnorm(x), W('mlp_fc1')).map(a => relu(a));
+    x = linear(rmsnorm(x, detach), W('mlp_fc1')).map(a => relu(a));
     x = linear(x, W('mlp_fc2')).map((a, i) => add(a, residual[i]));
   }
   return linear(x, p.get('lm_head')!);

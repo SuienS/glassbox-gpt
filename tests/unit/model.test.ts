@@ -62,6 +62,17 @@ test('recorder captures normalised inputs and attention for the last position', 
   }
 })
 
+test('detachNorms leaves the forward pass unchanged', () => {
+  const st = createState(DEFAULT_CONFIG, docs, 9, 10)
+  const tokens = [st.tok.bos, ...st.tok.encode('anna')]
+  const run = (detachNorms: boolean) => {
+    const keys = [[]] as Value[][][], values = [[]] as Value[][][]
+    const rec: Recorder = { inputs: [], attn: [], detachNorms }
+    return tokens.map((t, pos) => gpt(st.p, DEFAULT_CONFIG, t, pos, keys, values, rec).map(l => l.data))
+  }
+  expect(run(true)).toEqual(run(false))
+})
+
 test('samples start with BOS and stay within the block size', () => {
   const st = createState(DEFAULT_CONFIG, docs, 11, 10)
   for (const seq of sample(st, 20, 1).tokens) {
