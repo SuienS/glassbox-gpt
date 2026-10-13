@@ -2,6 +2,7 @@ import type { ToTrain, FromTrain } from './protocol';
 import { createState, trainStep, type TrainState } from '../engine/train';
 import { sample } from '../engine/sample';
 import { toFloat64 } from '../engine/serialize';
+import { validateConfig } from '../engine/validate';
 
 export type Post = (msg: FromTrain, transfer?: Transferable[]) => void;
 
@@ -69,7 +70,10 @@ export function createTrainer(post: Post): (msg: ToTrain) => void {
       switch (msg.type) {
         case 'init':
           stop();
-          pending = []; lastSnapshot = -1; lastMs = 0;
+          st = null; pending = []; lastSnapshot = -1; lastMs = 0;
+          const problems = validateConfig(msg.config, msg.numSteps);
+          if (msg.docs.length === 0) problems.push('No documents to train on.');
+          if (problems.length) throw new Error(problems.join(' '));
           st = createState(msg.config, msg.docs, msg.seed, msg.numSteps);
           every = snapshotEvery(msg.numSteps);
           post({ type: 'ready', numParams: st.params.length, chars: st.tok.chars, bos: st.tok.bos });

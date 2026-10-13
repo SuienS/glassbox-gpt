@@ -1,6 +1,6 @@
 import type { Value } from '../engine/value';
 import { type Config, type Params, type Recorder, gpt } from '../engine/model';
-import { loadParams } from '../engine/serialize';
+import { gptNumbers, numParams } from '../engine/infer';
 
 export function checkQuery(cfg: Config, vocabSize: number, tokens: number[], t: number, ...ids: Array<number | undefined>) {
   if (!Number.isInteger(t) || t < 0 || t >= tokens.length || t >= cfg.blockSize) {
@@ -35,5 +35,12 @@ export function softmaxNumbers(xs: number[]): number[] {
   return e.map(x => x / s);
 }
 
-export const probsAtLast = (w: Float64Array, cfg: Config, vocabSize: number, seq: number[]) =>
-  softmaxNumbers(recordForward(loadParams(w, cfg, vocabSize), cfg, seq, seq.length - 1).logits.map(l => l.data));
+// Forward only, so it runs on plain numbers.
+export function probsAtLast(w: Float64Array, cfg: Config, vocabSize: number, seq: number[]): number[] {
+  const p = numParams(w, cfg, vocabSize);
+  const keys = Array.from({ length: cfg.nLayer }, () => [] as number[][]);
+  const values = Array.from({ length: cfg.nLayer }, () => [] as number[][]);
+  let logits: number[] = [];
+  seq.forEach((tok, pos) => { logits = gptNumbers(p, cfg, tok, pos, keys, values); });
+  return softmaxNumbers(logits);
+}

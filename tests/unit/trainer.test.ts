@@ -87,13 +87,16 @@ test('pause stops training; sampling while paused does not change the run', asyn
   expect(losses).toEqual(directLosses(1000, losses.length));
 });
 
-test('a failure during training is reported and stops the loop', async () => {
+test('invalid init is rejected and leaves nothing to train', async () => {
   const h = harness();
+  h.send(init(100));
+  h.send({ type: 'init', config: { ...config, nHead: 3 }, docs, seed: 3, numSteps: 100 });
   h.send(init(10, []));
-  h.send({ type: 'start' });
-  const err = await h.until('error');
-  expect(err.message).toBeTruthy();
+  const errors = h.of('error').map(e => e.message);
+  expect(errors).toEqual([expect.stringMatching(/must divide/), expect.stringMatching(/No documents/)]);
   const count = h.msgs.length;
+  h.send({ type: 'start' });
+  h.send({ type: 'sample', count: 1, temperature: 1 });
   await wait(20);
   expect(h.msgs.length).toBe(count);
 });
