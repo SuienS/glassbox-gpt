@@ -2,11 +2,11 @@ import { expect, test } from 'vitest';
 import { mul, type Value } from '../../src/engine/value';
 import { choice, mulberry32 } from '../../src/engine/rng';
 import { type Config, gpt, softmax } from '../../src/engine/model';
-import { gptNumbers, numParams, numParamsOf } from '../../src/engine/infer';
+import { gptNumbers, numParams, numParamsOf, softmaxNums } from '../../src/engine/infer';
 import { loadParams } from '../../src/engine/serialize';
 import { sample } from '../../src/engine/sample';
 import type { TrainState } from '../../src/engine/train';
-import { probsAtLast, recordForward, softmaxNumbers } from '../../src/explain/forward';
+import { probsAtLast, recordForward } from '../../src/explain/forward';
 import { trained } from './fixtures';
 
 const configs: Config[] = [
@@ -44,10 +44,12 @@ test('numParamsOf matches numParams on the same weights', () => {
   for (const [name, rows] of a) rows.forEach((row, i) => expect(row).toEqual(Array.from(b.get(name)![i])));
 });
 
-test('probsAtLast matches the Value forward pass', () => {
+test('probsAtLast matches the Value forward pass and model.softmax', () => {
   const { cfg, w, vocabSize, tok } = trained();
   const seq = [tok.bos, ...tok.encode('jasmine')];
-  const viaValues = softmaxNumbers(recordForward(loadParams(w, cfg, vocabSize), cfg, seq, seq.length - 1).logits.map(l => l.data));
+  const logits = recordForward(loadParams(w, cfg, vocabSize), cfg, seq, seq.length - 1).logits;
+  const viaValues = softmax(logits).map(p => p.data);
+  expect(softmaxNums(logits.map(l => l.data))).toEqual(viaValues);
   expect(probsAtLast(w, cfg, vocabSize, seq)).toEqual(viaValues);
 });
 

@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { explain, rollout } from '../../src/explain';
 import { attribute } from '../../src/explain/attribute';
 import { probsAtLast } from '../../src/explain/forward';
+import { softmaxNums } from '../../src/engine/infer';
 import { trained } from './fixtures';
 
 const { cfg, w, vocabSize, tok } = trained();
@@ -65,8 +66,9 @@ test('attention rows are distributions over 0..t', () => {
 });
 
 test('top-5 is the model distribution at position t', () => {
-  const { topK } = explain(w, cfg, vocabSize, tokens, t, c);
+  const { topK, logits } = explain(w, cfg, vocabSize, tokens, t, c);
   const p = probsAtLast(w, cfg, vocabSize, tokens.slice(0, t + 1));
+  expect(softmaxNums(logits)).toEqual(p);
   expect(topK).toHaveLength(5);
   expect(topK.map(x => x.p)).toEqual([...p].sort((a, b) => b - a).slice(0, 5));
   topK.forEach(({ token, p: q }) => expect(p[token]).toBe(q));

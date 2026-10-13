@@ -9,7 +9,7 @@ export type Post = (msg: FromTrain, transfer?: Transferable[]) => void;
 const CHUNK_MS = 50;
 const PROGRESS_MS = 100;
 
-// Every 50 steps, widened so a long run sends at most  about 40 snapshots.
+// Every 50 steps, widened so a long run sends at most about 40 snapshots.
 export const snapshotEvery = (numSteps: number) => Math.max(50, Math.ceil(numSteps / 40 / 50) * 50);
 
 // Trains in about 50 ms chunks and yields between them, so pause/sample are handled promptly.
@@ -68,7 +68,7 @@ export function createTrainer(post: Post): (msg: ToTrain) => void {
   return msg => {
     try {
       switch (msg.type) {
-        case 'init':
+        case 'init': {
           stop();
           st = null; pending = []; lastSnapshot = -1; lastMs = 0;
           const problems = validateConfig(msg.config, msg.numSteps);
@@ -79,6 +79,7 @@ export function createTrainer(post: Post): (msg: ToTrain) => void {
           post({ type: 'ready', numParams: st.params.length, chars: st.tok.chars, bos: st.tok.bos });
           snapshot(st);
           break;
+        }
         case 'start':
           if (st && !running && st.step < st.numSteps) {
             stop();

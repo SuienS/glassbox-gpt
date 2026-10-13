@@ -28,6 +28,7 @@ export interface Explanation {
   contrast?: number[];     // [s], signed
   logitGap?: number;       // z_c - z_c' = log p(c) - log p(c')
   topK: Array<{ token: number; p: number }>;
+  logits: number[];        // [token], at position t; softmaxNums(logits.map(z => z / T)) gives temperature T
 }
 
 export type FromExplain =

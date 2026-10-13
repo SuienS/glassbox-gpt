@@ -1,6 +1,7 @@
 import type { Config } from '../engine/model';
 import type { Explanation } from '../workers/protocol';
-import { checkQuery, softmaxNumbers } from './forward';
+import { softmaxNums } from '../engine/infer';
+import { checkQuery } from './forward';
 import { attribute, attributeWithForward } from './attribute';
 
 // Attention rollout: mix each layer's head-mean attention with the identity (for the residual),
@@ -29,7 +30,7 @@ export function explain(w: Float64Array, cfg: Config, vocabSize: number,
   checkQuery(cfg, vocabSize, tokens, t, c, cPrime);
   const { logits, attn, rows, scores } = attributeWithForward(w, cfg, vocabSize, tokens, t, c);
   const z = logits.map(l => l.data);
-  const topK = softmaxNumbers(z).map((p, token) => ({ token, p })).sort((a, b) => b.p - a.p).slice(0, 5);
+  const topK = softmaxNums(z).map((p, token) => ({ token, p })).sort((a, b) => b.p - a.p).slice(0, 5);
   const s = scores.map(Math.abs);
   const total = s.reduce((a, b) => a + b, 0) || 1;
   const heads = attn[cfg.nLayer - 1];
@@ -41,5 +42,6 @@ export function explain(w: Float64Array, cfg: Config, vocabSize: number,
     contrast: cPrime === undefined ? undefined : attribute(w, cfg, vocabSize, tokens, t, c, cPrime),
     logitGap: cPrime === undefined ? undefined : z[c] - z[cPrime],
     topK,
+    logits: z,
   };
 }
