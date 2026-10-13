@@ -28,3 +28,6 @@ dist-ssr
 
 # Private
 notes/
+
+# Reference data downloaded by microgpt.py
+reference/input.txt
