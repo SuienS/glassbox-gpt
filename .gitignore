@@ -25,3 +25,9 @@ dist-ssr
 
 # Vitest
 .vitest/
+
+# Private
+notes/
+
+# Reference data downloaded by microgpt.py
+reference/input.txt
