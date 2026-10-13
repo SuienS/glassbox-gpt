@@ -21,8 +21,9 @@ export type ToExplain =
   | { type: 'deletion'; id: number; step: number; tokens: number[]; t: number; c: number; k: number; trials: number; seed: number };
 
 export interface Explanation {
-  attention: number[][];   // [head][s], last layer (or rollout)
-  meanAttention: number[]; // [s]
+  attention: number[][];   // [head][s], last layer
+  meanAttention: number[]; // [s], mean over the last layer's heads
+  rollout?: number[];      // [s], all layers combined; only when nLayer > 1
   saliency: number[];      // [s], sums to 1
   contrast?: number[];     // [s], signed
   logitGap?: number;       // z_c - z_c' = log p(c) - log p(c')

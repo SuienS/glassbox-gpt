@@ -72,11 +72,11 @@ test('pause stops training; sampling while paused does not change the run', asyn
   await wait(80);
   expect(h.msgs.at(-1)).toBe(paused);
 
-  const before = h.msgs.length;
   h.send({ type: 'sample', count: 3, temperature: 0.8 });
-  const [snap, samples] = h.msgs.slice(before) as [Msg<'snapshot'>, Msg<'samples'>];
-  expect(snap).toMatchObject({ type: 'snapshot', step: paused.step });
+  const samples = h.msgs.at(-1) as Msg<'samples'>;
   expect(samples).toMatchObject({ type: 'samples', step: paused.step });
+  // Sent recently, so the snapshot is still there.
+  expect(h.of('snapshot').filter(s => s.step === paused.step)).toHaveLength(1);
   expect(samples.text).toHaveLength(3);
 
   h.send({ type: 'start' });

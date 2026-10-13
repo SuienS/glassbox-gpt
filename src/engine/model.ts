@@ -8,7 +8,7 @@ export type Params = Map<string, Value[][]>;
 
 // inputs[pos]: normalised embedding; attn[layer][head][s]: weights at the latest position.
 // detachNorms treats rmsnorm scales as constants in the backward pass (forward values are unchanged).
-// Without it, gradient x input through a scale-invariant norm is ~0, which hides earlier positions.
+// Without detachNorms, gradient x input through a scale-invariant norm reaches 0, which hides earlier positions.
 export interface Recorder { inputs: Value[][]; attn: number[][][]; detachNorms?: boolean }
 
 // Without an rng all weights are zero, ready to be filled from a snapshot.
