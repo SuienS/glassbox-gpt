@@ -4,7 +4,6 @@
   let { id, py, step, current = false, title, note, actions, children }: {
     id: string;
     py?: string; // the matching part of microgpt.py
-
     step?: number;
     current?: boolean; // the step to do next
     title: string;

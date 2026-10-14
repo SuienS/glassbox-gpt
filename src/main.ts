@@ -12,9 +12,11 @@ const session = new Session(
   (msg, transfer = []) => trainer.postMessage(msg, transfer),
   (msg, transfer = []) => explainer.postMessage(msg, transfer),
 );
+session.device = savedDevice() ?? guessDevice(innerWidth, navigator.hardwareConcurrency);
+
 trainer.onmessage = (e: MessageEvent<FromTrain>) => session.fromTrain(e.data);
 explainer.onmessage = (e: MessageEvent<FromExplain>) => session.fromExplain(e.data);
-session.device = savedDevice() ?? guessDevice(innerWidth, navigator.hardwareConcurrency);
 trainer.onerror = () => session.fromTrain({ type: 'error', message: 'The training worker failed to load.' });
+explainer.onerror = () => session.explainerFailed('The explanation worker failed to load.');
 
 mount(App, { target: document.getElementById('app')!, props: { session } });

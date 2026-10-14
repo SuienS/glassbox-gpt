@@ -69,7 +69,8 @@ export class Session {
   get canSample() { return this.status === 'ready' || this.status === 'running' || this.status === 'paused' || this.status === 'done'; }
 
   init(run: Run) {
-    run = $state.snapshot(run);
+    // Only the config can be a form's proxy; copying the docs too would clone every line on the main thread.
+    run = { ...run, config: $state.snapshot(run.config) };
     // Same model shape, so the last speed still gives a fair time estimate.
     if (!this.run || !sameConfig(this.run.config, run.config)) this.msPerStep = 0;
     this.run = run;
@@ -232,6 +233,13 @@ export class Session {
         this.error = m.message;
         break;
     }
+  }
+
+  // The explainer worker itself failed, so no replies are coming for what's in flight.
+  explainerFailed(message: string) {
+    this.explainError = message;
+    this.explaining = this.deleting = false;
+    this.#inFlight = { explain: null, deletion: null };
   }
 
   fromExplain(m: FromExplain) {
