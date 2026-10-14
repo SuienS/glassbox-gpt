@@ -107,3 +107,9 @@ Your training text stays in your browser. The page counts visits with [GoatCount
 - **`microgpt.py`** by [Andrej Karpathy](https://github.com/karpathy), [this revision of the gist](https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95/14fb038816c7aae0bb9342c2dbf1a51dd134a5ff). The algorithm and its structure are his; this project is a TypeScript port of it. The gist doesn't state a licence. It is included here unchanged in `reference/microgpt.py` and shown in the app, along with a lightly modified copy for the parity test, with credit to the author. They will be removed if he asks.
 - **`public/presets/names.txt`** from Karpathy's [makemore](https://github.com/karpathy/makemore/blob/988aa59/names.txt) (MIT licence), the same file `microgpt.py` downloads.
 - Built with [Svelte](https://svelte.dev/) (MIT), [Tailwind CSS](https://tailwindcss.com/) (MIT), [uPlot](https://github.com/leeoniya/uPlot) (MIT), [d3-scale-chromatic](https://github.com/d3/d3-scale-chromatic) (ISC) and [driver.js](https://driverjs.com/) (MIT), on [Vite](https://vite.dev/) and [Vitest](https://vitest.dev/).
+
+## Licence
+
+Copyright 2026 Ravidu Silva. The code in this repository is licensed under the [Apache License 2.0](LICENSE).
+
+That doesn't cover the third-party parts listed under Credits, which keep their own terms: `reference/microgpt.py` and `reference/microgpt_ref.py` (Karpathy's code, no licence stated), `public/presets/names.txt` (MIT) and the npm dependencies.
