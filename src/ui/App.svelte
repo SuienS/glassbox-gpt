@@ -1,29 +1,14 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { DEFAULT_CONFIG } from '../engine/model';
-  import { validateText } from '../engine/validate';
   import ConfigPanel from './ConfigPanel.svelte';
+  import DatasetPanel from './DatasetPanel.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
   import Panel from './Panel.svelte';
   import SamplePanel from './SamplePanel.svelte';
   import TrainPanel from './TrainPanel.svelte';
-  import { DEFAULT_SEED, DEFAULT_STEPS, loadPreset } from './lib/presets';
+  import { saveDevice } from './lib/limits';
   import type { Session } from './session.svelte';
 
   let { session }: { session: Session } = $props();
-
-  let dataset = $state<{ name: string; lines: number; vocab: number } | null>(null);
-  let loadError = $state<string | null>(null);
-
-  onMount(async () => {
-    try {
-      const report = validateText(await loadPreset('names'), DEFAULT_CONFIG.blockSize, session.limits);
-      dataset = { name: 'Names', lines: report.lines, vocab: report.vocab };
-      session.init({ config: DEFAULT_CONFIG, docs: report.docs, numSteps: DEFAULT_STEPS, seed: DEFAULT_SEED });
-    } catch (err) {
-      loadError = `Couldn't load the names dataset (${err instanceof Error ? err.message : err}).`;
-    }
-  });
 </script>
 
 <header class="border-b border-line bg-panel">
@@ -36,19 +21,23 @@
 <main class="mx-auto grid max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
   <div class="flex min-w-0 flex-col gap-4">
     <Panel id="dataset" title="Dataset" note="One example per line. Your text never leaves the browser.">
-      {#if dataset}
-        <p class="text-sm">
-          {dataset.name}
-          <span class="text-muted">({dataset.lines.toLocaleString('en')} lines, {dataset.vocab} characters)</span>
-        </p>
-      {:else if loadError}
-        <p class="text-sm text-danger" role="alert">{loadError}</p>
-      {:else}
-        <p class="text-sm text-muted">Loading...</p>
-      {/if}
+      <DatasetPanel {session} />
     </Panel>
 
     <Panel id="config" title="Model" note="Bigger models learn more and train slower.">
+      {#snippet actions()}
+        <label class="flex items-center gap-1.5 text-xs text-muted" title="Caps on model size, steps and dataset size">
+          Limits
+          <select
+            class="rounded border border-line bg-panel py-0.5 pr-1 text-xs text-ink"
+            bind:value={session.device}
+            onchange={() => saveDevice(session.device)}
+          >
+            <option value="desktop">Desktop</option>
+            <option value="mobile">Phone</option>
+          </select>
+        </label>
+      {/snippet}
       <ConfigPanel {session} />
     </Panel>
 

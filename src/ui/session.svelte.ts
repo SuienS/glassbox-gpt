@@ -1,8 +1,9 @@
-import type { Config } from '../engine/model';
-import { DESKTOP, type Limits } from '../engine/validate';
+import { type Config, DEFAULT_CONFIG } from '../engine/model';
 import { targetFor } from '../explain/targets';
 import type { Explanation, FromExplain, FromTrain, ToExplain, ToTrain } from '../workers/protocol';
+import { type Device, LIMITS } from './lib/limits';
 import { extendEma } from './lib/loss';
+import { DEFAULT_SEED, DEFAULT_STEPS } from './lib/presets';
 
 export type Send<T> = (msg: T, transfer?: Transferable[]) => void;
 export type Status = 'idle' | 'ready' | 'running' | 'paused' | 'done' | 'error';
@@ -23,7 +24,8 @@ export class Session {
   status = $state<Status>('idle');
   error = $state<string | null>(null);
   run = $state.raw<Run | null>(null);
-  limits = $state.raw<Limits>(DESKTOP);
+  datasetName = $state('');
+  device = $state<Device>('desktop');
 
   step = $state(0);
   msPerStep = $state(0);
@@ -54,6 +56,7 @@ export class Session {
     this.#explain = explain;
   }
 
+  get limits() { return LIMITS[this.device]; }
   get vocabSize() { return this.bos + 1; }
   get canSample() { return this.status === 'ready' || this.status === 'running' || this.status === 'paused' || this.status === 'done'; }
 
@@ -74,6 +77,13 @@ export class Session {
     this.#pendingInits++;
     this.#explain({ type: 'reset' });
     this.#train({ type: 'init', ...run });
+  }
+
+  // New training text, keeping the current model settings.
+  useDocs(name: string, docs: string[]) {
+    this.datasetName = name;
+    const base = this.run ?? { config: DEFAULT_CONFIG, numSteps: DEFAULT_STEPS, seed: DEFAULT_SEED };
+    this.init({ config: base.config, numSteps: base.numSteps, seed: base.seed, docs });
   }
 
   start() {

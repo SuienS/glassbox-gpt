@@ -15,10 +15,10 @@ test('empty input is an error', () => {
 });
 
 test('line and byte caps depend on the limits', () => {
-  const lines = Array.from({ length: 25_000 }, (_, i) => `n${i % 10}`).join('\n');
-  expect(validateText(lines, 16, DESKTOP).errors).toEqual([]);
-  expect(validateText(lines, 16, MOBILE).errors).toEqual(['Too many lines (25,000; maximum 20,000).']);
-  const big = 'ශ්‍රී\n'.repeat(80_000); // multi-byte characters count by bytes, not length
+  const lines = Array.from({ length: 60_000 }, (_, i) => `n${i % 10}`).join('\n');
+  expect(validateText(lines, 16, DESKTOP).errors).toEqual(['Too many lines (60,000; maximum 50,000).']);
+  const big = 'ශ්‍රීශ්‍රී\n'.repeat(40_000); // multi-byte characters count by bytes, not length
+  expect(validateText(big, 16, DESKTOP).errors).toEqual([]);
   expect(validateText(big, 16, MOBILE).errors[0]).toMatch(/limit is 1\.0 MB/);
 });
 

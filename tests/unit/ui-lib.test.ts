@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
-import { charLabel, formatDuration, formatMs } from '../../src/ui/lib/format';
+import { charLabel, formatBytes, formatDuration, formatMs, needsShaping } from '../../src/ui/lib/format';
+import { guessDevice } from '../../src/ui/lib/limits';
 import { extendEma } from '../../src/ui/lib/loss';
 
 test('extendEma continues the average across calls', () => {
@@ -23,4 +24,26 @@ test('whitespace gets a visible label', () => {
   expect(charLabel(' ')).toBe('␣');
   expect(charLabel('\t')).toBe('⇥');
   expect(charLabel('ශ')).toBe('ශ');
+});
+
+test('formatBytes', () => {
+  expect(formatBytes(900)).toBe('900 B');
+  expect(formatBytes(228_145)).toBe('223 KB');
+  expect(formatBytes(3 * 1024 * 1024)).toBe('3.0 MB');
+});
+
+test('narrow screens and few cores get the phone limits', () => {
+  expect(guessDevice(1280, 8)).toBe('desktop');
+  expect(guessDevice(1280, undefined)).toBe('desktop');
+  expect(guessDevice(640, 8)).toBe('mobile');
+  expect(guessDevice(1280, 4)).toBe('mobile');
+});
+
+test('marks and invisible characters get a visible label', () => {
+  expect(charLabel('\u0dca')).toBe('◌\u0dca'); // Sinhala al-lakuna
+  expect(charLabel('\u200d')).toBe('ZWJ');
+  expect(charLabel('\u00ad')).toBe('U+00AD');
+  expect(charLabel('🙂')).toBe('🙂');
+  expect(needsShaping('අම්මා')).toBe(true);
+  expect(needsShaping('emma 🙂')).toBe(false);
 });

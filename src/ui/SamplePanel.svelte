@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Sample, Session } from './session.svelte';
-  import { charLabel } from './lib/format';
+  import { charLabel, needsShaping } from './lib/format';
 
   let { session }: { session: Session } = $props();
 
@@ -62,6 +62,9 @@
               >{charLabel(ch)}</button>
             {/if}
           {/each}
+          {#if needsShaping(s.text)}
+            <span class="ml-3 font-sans text-sm text-muted" title="The sample with its characters joined">{s.text}</span>
+          {/if}
         </span>
       </li>
     {/each}

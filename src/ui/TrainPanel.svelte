@@ -11,7 +11,7 @@
   // Announced to screen readers; the step counter below is not, as it changes ten times a second.
   const phase = $derived.by(() => {
     switch (session.status) {
-      case 'idle': return session.run ? 'Building the model...' : 'Loading the dataset...';
+      case 'idle': return session.run ? 'Building the model...' : 'Waiting for a dataset';
       case 'ready': return 'Ready to train';
       case 'running': return 'Training';
       case 'paused': return `Paused at step ${session.step.toLocaleString('en')}`;

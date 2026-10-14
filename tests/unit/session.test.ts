@@ -4,6 +4,8 @@ import { parseDocs } from '../../src/engine/tokenizer';
 import { createExplainer } from '../../src/workers/explainer';
 import { createTrainer } from '../../src/workers/trainer';
 import type { FromTrain, ToExplain, ToTrain } from '../../src/workers/protocol';
+import { DEFAULT_CONFIG } from '../../src/engine/model';
+import { DESKTOP, MOBILE } from '../../src/engine/validate';
 import { type Run, Session } from '../../src/ui/session.svelte';
 
 const run: Run = { config: { nEmbd: 8, nHead: 2, nLayer: 1, blockSize: 16 }, docs: parseDocs(names).slice(0, 200), numSteps: 30, seed: 3 };
@@ -139,4 +141,22 @@ test('reset keeps the last speed for the time estimate; a new model shape drops 
   expect(s.step).toBe(0);
   s.init({ ...run, config: { ...run.config, nLayer: 2 } });
   expect(s.msPerStep).toBe(0);
+});
+
+test('new training text keeps the model settings, or starts from the defaults', () => {
+  const sent: ToTrain[] = [];
+  const s = new Session(m => { sent.push(m); }, () => {});
+  s.useDocs('Names', ['ana', 'bob']);
+  expect(s.datasetName).toBe('Names');
+  expect(sent[0]).toMatchObject({ type: 'init', config: DEFAULT_CONFIG, numSteps: 1000, seed: 42, docs: ['ana', 'bob'] });
+  s.init(run);
+  s.useDocs('mine.txt', ['x']);
+  expect(sent[2]).toMatchObject({ type: 'init', config: run.config, numSteps: run.numSteps, seed: run.seed, docs: ['x'] });
+});
+
+test('limits follow the chosen device', () => {
+  const s = new Session(() => {}, () => {});
+  expect(s.limits).toBe(DESKTOP);
+  s.device = 'mobile';
+  expect(s.limits).toBe(MOBILE);
 });
