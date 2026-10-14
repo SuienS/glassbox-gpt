@@ -127,3 +127,16 @@ test('start, pause and sample only act in states where they make sense', () => {
   expect(s.status).toBe('paused');
   expect(sent.map(m => m.type)).toEqual(['init', 'start', 'pause']);
 });
+
+test('reset keeps the last speed for the time estimate; a new model shape drops it', () => {
+  const s = new Session(() => {}, () => {});
+  const ready: FromTrain = { type: 'ready', numParams: 10, chars: ['a'], bos: 1 };
+  s.init(run);
+  s.fromTrain(ready);
+  s.fromTrain({ type: 'progress', step: 5, losses: [3, 3], msPerStep: 2 });
+  s.reset();
+  expect(s.msPerStep).toBe(2);
+  expect(s.step).toBe(0);
+  s.init({ ...run, config: { ...run.config, nLayer: 2 } });
+  expect(s.msPerStep).toBe(0);
+});

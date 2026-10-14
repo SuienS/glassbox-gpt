@@ -14,6 +14,9 @@ export interface Deletion { step: number; p: number; salientDrop: number; random
 
 const MAX_SAMPLES = 50;
 
+const sameConfig = (a: Config, b: Config) =>
+  a.nEmbd === b.nEmbd && a.nHead === b.nHead && a.nLayer === b.nLayer && a.blockSize === b.blockSize;
+
 // Owns the app state and routes messages between the UI and the two workers.
 // The workers never talk to each other: snapshots pass through here on their way to the explainer.
 export class Session {
@@ -56,11 +59,12 @@ export class Session {
 
   init(run: Run) {
     run = $state.snapshot(run);
+    // Same model shape, so the last speed still gives a fair time estimate.
+    if (!this.run || !sameConfig(this.run.config, run.config)) this.msPerStep = 0;
     this.run = run;
     this.status = 'idle';
     this.error = null;
     this.step = 0;
-    this.msPerStep = 0;
     this.losses = [];
     this.smoothed = [];
     this.snapshots = [];
@@ -92,6 +96,10 @@ export class Session {
     if (!this.canSample) return;
     this.#sampleTemps.push(temperature);
     this.#train({ type: 'sample', count, temperature });
+  }
+
+  clearSamples() {
+    this.samples = [];
   }
 
   // k indexes sample.tokens; see targetFor.
