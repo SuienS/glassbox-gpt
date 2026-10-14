@@ -1,6 +1,7 @@
 <script lang="ts">
   import ContextMap from './explain/ContextMap.svelte';
   import DeletionResult from './explain/DeletionResult.svelte';
+  import Timeline from './explain/Timeline.svelte';
   import TopK from './explain/TopK.svelte';
   import { candidates, deletionVerdict } from './lib/explain';
   import { charLabel } from './lib/format';
@@ -30,8 +31,20 @@
       <span class="text-muted">{context(tg.tokens.slice(0, tg.t + 1))}</span><span
         class="rounded bg-accent px-1 text-accent-ink">{label(tg.c)}</span>
     </p>
-    <p class="font-mono text-xs text-muted tabular-nums">weights from step {tg.step}, temperature {tg.temperature.toFixed(1)}</p>
+    <p class="font-mono text-xs text-muted tabular-nums">sampled at step {tg.step}, temperature {tg.temperature.toFixed(1)}</p>
   </div>
+
+  {#if session.viewStep !== null}
+    <div class="mt-4 rounded-md border border-line bg-canvas px-3 py-2.5">
+      <Timeline
+        steps={session.snapshots}
+        value={session.viewStep}
+        sampleStep={tg.step}
+        smoothed={session.smoothed}
+        onchange={step => session.showStep(step)}
+      />
+    </div>
+  {/if}
 
   {#if session.explainError}
     <p class="mt-3 text-sm text-danger" role="alert">{session.explainError}</p>

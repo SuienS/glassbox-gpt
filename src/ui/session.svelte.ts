@@ -40,6 +40,7 @@ export class Session {
 
   target = $state.raw<Target | null>(null);
   cPrime = $state<number | null>(null); // the rival character for "why c and not c'"
+  viewStep = $state<number | null>(null); // the snapshot the pinned character is explained with
   explanation = $state.raw<{ step: number; result: Explanation } | null>(null);
   deletion = $state.raw<Deletion | null>(null);
   explaining = $state(false);
@@ -51,7 +52,12 @@ export class Session {
   #pendingInits = 0;
   #sampleTemps: number[] = [];
   #nextId = 0;
-  #latest = { explain: 0, deletion: 0 };
+  #explanations = new Map<string, Explanation>(); // for the pinned character, by step and rival
+  #deletions = new Map<number, Deletion>(); // by step
+  #inFlight: {
+    explain: { id: number; step: number; key: string } | null;
+    deletion: { id: number; step: number } | null;
+  } = { explain: null, deletion: null };
 
   constructor(train: Send<ToTrain>, explain: Send<ToExplain>) {
     this.#train = train;
@@ -119,46 +125,69 @@ export class Session {
     const { t, c } = targetFor(sample.tokens, k);
     this.unpin();
     this.target = { step: sample.step, temperature: sample.temperature, tokens: sample.tokens, t, c };
-    this.explain(sample.step);
-    this.runDeletion(sample.step);
+    this.showStep(sample.step);
   }
 
   // Compare the pinned character against cPrime, or stop comparing with null.
   compare(cPrime: number | null) {
     if (!this.target || cPrime === this.target.c) return;
     this.cPrime = cPrime;
-    this.explain(this.explanation?.step ?? this.target.step);
+    this.explainError = null;
+    this.#refresh();
+  }
+
+  // Explains the pinned character with the weights from any snapshot, not just the one that sampled it.
+  showStep(step: number) {
+    if (!this.target) return;
+    this.viewStep = step;
+    this.explainError = null;
+    this.#refresh();
   }
 
   unpin() {
     this.target = null;
     this.cPrime = null;
+    this.viewStep = null;
     this.explanation = null;
     this.deletion = null;
     this.explaining = this.deleting = false;
     this.explainError = null;
-    this.#latest = { explain: 0, deletion: 0 };
+    this.#explanations.clear();
+    this.#deletions.clear();
+    this.#inFlight = { explain: null, deletion: null };
   }
 
-  explain(step: number) {
-    const tg = this.target;
-    if (!tg) return;
-    this.explaining = true;
-    this.explainError = null;
-    const id = this.#latest.explain = ++this.#nextId;
-    this.#explain({ type: 'explain', id, step, tokens: tg.tokens, t: tg.t, c: tg.c, cPrime: this.cPrime ?? undefined });
-  }
+  // Shows cached results for viewStep and asks the explainer for whatever is missing. The worker can't
+  // cancel work, so only one request of each kind is in flight; each reply runs this again for wherever
+  // the timeline is by then, and fast scrubbing never builds a queue.
+  #refresh() {
+    const tg = this.target, step = this.viewStep;
+    if (!tg || step === null) return;
 
-  runDeletion(step: number) {
-    const tg = this.target;
-    this.deletion = null;
-    if (!tg || tg.t === 0) return; // nothing earlier to delete
-    this.deleting = true;
-    const id = this.#latest.deletion = ++this.#nextId;
-    this.#explain({
-      type: 'deletion', id, step, tokens: tg.tokens, t: tg.t, c: tg.c,
-      k: DELETION_K, trials: Math.min(20, this.limits.trials), seed: 1,
-    });
+    const key = `${step}/${this.cPrime ?? ''}`;
+    const result = this.#explanations.get(key);
+    this.explaining = !result;
+    if (result) {
+      this.explanation = { step, result };
+    } else if (!this.#inFlight.explain) {
+      const id = ++this.#nextId;
+      this.#inFlight.explain = { id, step, key };
+      this.#explain({ type: 'explain', id, step, tokens: tg.tokens, t: tg.t, c: tg.c, cPrime: this.cPrime ?? undefined });
+    }
+
+    if (tg.t === 0) return; // nothing earlier to delete
+    const deletion = this.#deletions.get(step);
+    this.deleting = !deletion;
+    if (deletion) {
+      this.deletion = deletion;
+    } else if (result && !this.#inFlight.deletion) { // explanation first: it is what people are waiting for
+      const id = ++this.#nextId;
+      this.#inFlight.deletion = { id, step };
+      this.#explain({
+        type: 'deletion', id, step, tokens: tg.tokens, t: tg.t, c: tg.c,
+        k: DELETION_K, trials: Math.min(20, this.limits.trials), seed: 1,
+      });
+    }
   }
 
   fromTrain(m: FromTrain) {
@@ -207,22 +236,31 @@ export class Session {
 
   fromExplain(m: FromExplain) {
     switch (m.type) {
-      case 'explanation':
-        if (m.id !== this.#latest.explain) return;
-        this.explaining = false;
-        this.explanation = { step: m.step, result: m.result };
+      case 'explanation': {
+        const req = this.#inFlight.explain;
+        if (m.id !== req?.id) return; // asked for an earlier pin
+        this.#inFlight.explain = null;
+        this.#explanations.set(req.key, m.result);
         break;
-      case 'deletionResult':
-        if (m.id !== this.#latest.deletion) return;
-        this.deleting = false;
-        this.deletion = { step: m.step, p: m.p, salientDrop: m.salientDrop, randomDrop: m.randomDrop, randomStd: m.randomStd };
+      }
+      case 'deletionResult': {
+        if (m.id !== this.#inFlight.deletion?.id) return;
+        this.#inFlight.deletion = null;
+        this.#deletions.set(m.step, { step: m.step, p: m.p, salientDrop: m.salientDrop, randomDrop: m.randomDrop, randomStd: m.randomStd });
         break;
-      case 'error':
-        if (m.id === this.#latest.explain) this.explaining = false;
-        else if (m.id === this.#latest.deletion) this.deleting = false;
-        else return;
+      }
+      case 'error': {
+        const kind = m.id === this.#inFlight.explain?.id ? 'explain' : m.id === this.#inFlight.deletion?.id ? 'deletion' : null;
+        if (!kind) return;
+        const failed = this.#inFlight[kind]!.step;
+        this.#inFlight[kind] = null;
         this.explainError = m.message;
+        if (kind === 'explain') this.explaining = false;
+        else this.deleting = false;
+        if (failed === this.viewStep) return; // asking again would only fail again
         break;
+      }
     }
+    this.#refresh();
   }
 }

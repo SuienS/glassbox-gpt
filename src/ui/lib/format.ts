@@ -1,5 +1,6 @@
 export function formatDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return '-';
+  if (ms < 500) return '<1 s';
   const s = Math.round(ms / 1000);
   if (s < 60) return `${s} s`;
   const m = Math.floor(s / 60);

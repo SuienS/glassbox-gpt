@@ -18,7 +18,10 @@ function wired() {
   const toExplain: ToExplain[] = [];
   let queue: ToExplain[] = [];
   s = new Session(m => train(m), m => { toExplain.push(m); queue.push(m); });
-  const deliver = () => { const q = queue; queue = []; q.forEach(explain); };
+  // Replies can trigger follow-up requests, so keep going until the explainer is idle.
+  const deliver = () => {
+    while (queue.length) { const q = queue; queue = []; q.forEach(explain); }
+  };
   return { s, toExplain, deliver };
 }
 
@@ -74,28 +77,26 @@ test('samples keep their temperature; pinning explains and runs the deletion tes
   expect(s.deletion).toBeNull();
 });
 
-test('stale explainer replies are dropped; errors land on the request that failed', () => {
+test('replies for an earlier pin are dropped; a failed step is not retried', () => {
   const { s, toExplain, deliver } = wired();
   s.init(run);
   s.sample(5, 1);
   const sample = s.samples.find(x => x.tokens.length > 2)!;
   s.pin(sample, 2);
-  s.compare((s.target!.c + 1) % s.vocabSize);
-  deliver();
-  expect(toExplain.filter(m => m.type === 'explain')).toHaveLength(2);
-  expect(s.explanation!.result.contrast).toBeDefined();
-
-  s.explain(99);
   s.unpin();
   deliver();
-  expect(s.explainError).toBeNull();
+  expect(s.explanation).toBeNull();
 
   s.pin(sample, 2);
-  s.explain(99);
+  deliver();
+  expect(s.explanation!.step).toBe(0);
+  const sent = toExplain.length;
+  s.showStep(99);
   deliver();
   expect(s.explaining).toBe(false);
   expect(s.explainError).toMatch(/No snapshot for step 99/);
-  expect(s.deletion).not.toBeNull();
+  expect(s.explanation!.step).toBe(0); // the last good one stays up
+  expect(toExplain.length).toBe(sent + 1);
 });
 
 test('messages from an earlier run are ignored until the latest init answers', () => {
@@ -183,4 +184,35 @@ test('a rival character adds a contrast until it is cleared or the pin changes',
   s.compare(rival);
   s.pin(sample, 2);
   expect(s.cPrime).toBeNull();
+});
+
+test('the timeline reuses cached steps and keeps one request of each kind in flight', async () => {
+  const { s, toExplain, deliver } = wired();
+  s.init(run);
+  s.start();
+  await until(() => s.status === 'done');
+  s.sample(5, 1);
+  deliver();
+  const sample = s.samples.find(x => x.tokens.length > 3)!;
+  const asked = () => toExplain.filter(m => m.type === 'explain' || m.type === 'deletion').map(m => `${m.type}@${m.step}`);
+
+  s.pin(sample, 3);
+  s.showStep(0);
+  s.showStep(30);
+  s.showStep(0);
+  expect(asked()).toEqual(['explain@30']); // the rest wait for that reply
+  deliver();
+  expect(s.viewStep).toBe(0);
+  expect(s.explanation!.step).toBe(0);
+  expect(s.deletion!.step).toBe(0);
+  expect(asked()).toEqual(['explain@30', 'explain@0', 'deletion@0']);
+
+  s.showStep(30);
+  deliver();
+  expect(s.explanation!.step).toBe(30);
+  expect(asked().slice(3)).toEqual(['deletion@30']); // the step-30 explanation was already cached
+
+  s.showStep(0);
+  expect(s.explaining || s.deleting).toBe(false);
+  expect(asked()).toHaveLength(4);
 });
