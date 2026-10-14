@@ -65,29 +65,33 @@
       {/each}
     {/each}
 
-    <text x={LABEL_W - 8} y={salTop + BARS / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">saliency</text>
-    <line x1={LABEL_W} x2={width} y1={salTop + BARS + 0.5} y2={salTop + BARS + 0.5} class="stroke-line" />
-    {#each result.saliency as v, s}
-      {@const h = (v / maxSal) * BARS}
-      <rect x={x(s) + 3} y={salTop + BARS - h} width={cell - 6} height={h} rx="1.5" class="fill-accent">
-        <title>"{labels[s]}": {pct(v)}</title>
-      </rect>
-      {#if cell >= 22 && v >= 0.01}
-        <text x={x(s) + cell / 2} y={salTop + BARS - h - 4} text-anchor="middle" class="fill-muted text-[9px]">{pct(v)}</text>
-      {/if}
-    {/each}
+    <g data-py="autograd">
+      <text x={LABEL_W - 8} y={salTop + BARS / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">saliency</text>
+      <line x1={LABEL_W} x2={width} y1={salTop + BARS + 0.5} y2={salTop + BARS + 0.5} class="stroke-line" />
+      {#each result.saliency as v, s}
+        {@const h = (v / maxSal) * BARS}
+        <rect x={x(s) + 3} y={salTop + BARS - h} width={cell - 6} height={h} rx="1.5" class="fill-accent">
+          <title>"{labels[s]}": {pct(v)}</title>
+        </rect>
+        {#if cell >= 22 && v >= 0.01}
+          <text x={x(s) + cell / 2} y={salTop + BARS - h - 4} text-anchor="middle" class="fill-muted text-[9px]">{pct(v)}</text>
+        {/if}
+      {/each}
+    </g>
 
     {#if result.contrast && cPrime}
-      <text x={LABEL_W - 8} y={conMid - HALF / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">for {c}</text>
-      <text x={LABEL_W - 8} y={conMid + HALF / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">for {cPrime}</text>
-      <line x1={LABEL_W} x2={width} y1={conMid + 0.5} y2={conMid + 0.5} class="stroke-line" />
-      {#each result.contrast as v, s}
-        {@const h = (Math.abs(v) / maxCon) * HALF}
-        <rect x={x(s) + 3} y={v >= 0 ? conMid - h : conMid + 1} width={cell - 6} height={h} rx="1.5"
-          class={v >= 0 ? 'fill-accent' : 'fill-warn'}>
-          <title>"{labels[s]}": {v >= 0 ? '+' : ''}{v.toFixed(3)}</title>
-        </rect>
-      {/each}
+      <g data-py="autograd">
+        <text x={LABEL_W - 8} y={conMid - HALF / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">for {c}</text>
+        <text x={LABEL_W - 8} y={conMid + HALF / 2 + 4} text-anchor="end" class="fill-muted font-sans text-[11px]">for {cPrime}</text>
+        <line x1={LABEL_W} x2={width} y1={conMid + 0.5} y2={conMid + 0.5} class="stroke-line" />
+        {#each result.contrast as v, s}
+          {@const h = (Math.abs(v) / maxCon) * HALF}
+          <rect x={x(s) + 3} y={v >= 0 ? conMid - h : conMid + 1} width={cell - 6} height={h} rx="1.5"
+            class={v >= 0 ? 'fill-accent' : 'fill-warn'}>
+            <title>"{labels[s]}": {v >= 0 ? '+' : ''}{v.toFixed(3)}</title>
+          </rect>
+        {/each}
+      </g>
     {/if}
   </svg>
 </div>

@@ -62,3 +62,34 @@
       disabled:opacity-60 aria-invalid:border-danger;
   }
 }
+
+/* driver.js popovers, in the app's colours. driver.css loads later, so these need the extra class. */
+.driver-popover.tour {
+  @apply max-w-80 rounded-lg border border-line bg-panel p-4 font-sans text-ink shadow-lg;
+}
+.driver-popover.tour .driver-popover-title {
+  @apply text-sm font-semibold;
+}
+.driver-popover.tour .driver-popover-description {
+  @apply text-sm text-muted;
+}
+.driver-popover.tour .driver-popover-progress-text {
+  @apply text-xs text-muted;
+}
+.driver-popover.tour .driver-popover-close-btn {
+  @apply text-muted hover:text-ink focus-visible:text-ink;
+}
+.driver-popover.tour .driver-popover-footer-btn {
+  @apply rounded-md border border-line bg-panel px-2.5 py-1 text-xs font-medium text-ink [text-shadow:none] hover:bg-canvas focus:bg-panel;
+}
+.driver-popover.tour .driver-popover-next-btn {
+  @apply border-transparent bg-accent text-accent-ink hover:bg-accent/90 focus:bg-accent;
+}
+.driver-popover.tour .driver-popover-footer-btn:focus-visible,
+.driver-popover.tour .driver-popover-close-btn:focus-visible {
+  @apply outline-2 outline-offset-2 outline-accent;
+}
+.driver-popover.tour .driver-popover-arrow-side-left { border-left-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-right { border-right-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-top { border-top-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-bottom { border-bottom-color: var(--panel); }

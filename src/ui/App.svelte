@@ -7,8 +7,42 @@
   import TrainPanel from './TrainPanel.svelte';
   import { saveDevice } from './lib/limits';
   import type { Session } from './session.svelte';
+  import { startTour, tourSeen } from './tour';
 
   let { session }: { session: Session } = $props();
+
+  let pythonOpen = $state(false);
+  let part = $state<string | null>('model');
+  let toggle = $state<HTMLButtonElement>();
+  let aside = $state<HTMLElement>();
+
+  // While the code is open, hovering or focusing a part of the page selects its lines.
+  $effect(() => {
+    if (!pythonOpen) return;
+    const pick = (e: Event) => {
+      const id = (e.target as Element).closest?.('[data-py]')?.getAttribute('data-py');
+      if (id) part = id;
+    };
+    document.addEventListener('pointerover', pick);
+    document.addEventListener('focusin', pick);
+    return () => {
+      document.removeEventListener('pointerover', pick);
+      document.removeEventListener('focusin', pick);
+    };
+  });
+
+  function closePython() {
+    pythonOpen = false;
+    toggle?.focus();
+  }
+
+  // First visit: show the tour once the model is ready to train.
+  let tourChecked = false;
+  $effect(() => {
+    if (tourChecked || session.status !== 'ready') return;
+    tourChecked = true;
+    if (!tourSeen()) startTour();
+  });
 
   // Dataset and model come with defaults, so after loading the hint jumps to training.
   const next = $derived(
@@ -20,20 +54,40 @@
   );
 </script>
 
+<svelte:window onkeydown={e => e.key === 'Escape' && aside?.contains(document.activeElement) && closePython()} />
+
+<div class="lg:flex">
+<div class="min-w-0 flex-1">
 <header class="border-b border-line bg-panel">
-  <div class="mx-auto flex max-w-7xl flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3">
-    <h1 class="font-semibold tracking-tight">Glass-box GPT</h1>
-    <p class="text-sm text-muted">A tiny GPT trained in your browser, with a reason for every character it writes.</p>
+  <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <h1 class="font-semibold tracking-tight">Glass-box GPT</h1>
+      <p class="text-sm text-muted">A tiny GPT trained in your browser, with a reason for every character it writes.</p>
+    </div>
+    <div class="ml-auto flex gap-2">
+      <button class="btn px-2.5 py-1 text-xs" onclick={startTour}>Tour</button>
+      <button
+        id="python-toggle"
+        bind:this={toggle}
+        class="btn px-2.5 py-1 text-xs aria-expanded:border-accent aria-expanded:text-accent"
+        aria-expanded={pythonOpen}
+        aria-controls="python"
+        onclick={() => (pythonOpen ? closePython() : (pythonOpen = true))}
+      >Python</button>
+    </div>
   </div>
 </header>
 
-<main class="mx-auto grid max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+<main
+  class="mx-auto grid max-w-7xl gap-4 px-4 py-6
+    {pythonOpen ? 'max-lg:pb-[58vh] 2xl:grid-cols-[22rem_minmax(0,1fr)]' : 'lg:grid-cols-[22rem_minmax(0,1fr)]'}"
+>
   <div class="flex min-w-0 flex-col gap-4">
-    <Panel id="dataset" step={1} current={next === 1} title="Dataset" note="One example per line. Your text never leaves the browser.">
+    <Panel id="dataset" py="dataset" step={1} current={next === 1} title="Dataset" note="One example per line. Your text never leaves the browser.">
       <DatasetPanel {session} />
     </Panel>
 
-    <Panel id="config" step={2} title="Model" note="Bigger models learn more and train slower.">
+    <Panel id="config" py="settings" step={2} title="Model" note="Bigger models learn more and train slower.">
       {#snippet actions()}
         <label class="flex items-center gap-1.5 text-xs text-muted" title="Caps on model size, steps and dataset size">
           Limits
@@ -50,13 +104,13 @@
       <ConfigPanel {session} />
     </Panel>
 
-    <Panel id="train" step={3} current={next === 3} title="Training">
+    <Panel id="train" py="training" step={3} current={next === 3} title="Training">
       <TrainPanel {session} />
     </Panel>
   </div>
 
   <div class="flex min-w-0 flex-col gap-4">
-    <Panel id="samples" step={4} current={next === 4} title="Samples" note="Generate text, then click any character to see why the model wrote it.">
+    <Panel id="samples" py="sampling" step={4} current={next === 4} title="Samples" note="Generate text, then click any character to see why the model wrote it.">
       {#snippet actions()}
         {#if session.samples.length}
           <button class="cursor-pointer text-xs text-muted hover:text-ink" onclick={() => session.clearSamples()}>Clear</button>
@@ -65,8 +119,25 @@
       <SamplePanel {session} />
     </Panel>
 
-    <Panel id="explain" step={5} current={next === 5} title="Explanation">
+    <Panel id="explain" py="model" step={5} current={next === 5} title="Explanation">
       <ExplainPanel {session} />
     </Panel>
   </div>
 </main>
+</div>
+
+{#if pythonOpen}
+  <!-- Not modal: the page stays usable, so hovering it can drive the highlight. -->
+  <aside
+    id="python"
+    aria-label="Python source"
+    class="fixed inset-x-0 bottom-0 z-20 h-[55vh] border-t border-line bg-panel shadow-lg
+      lg:sticky lg:top-0 lg:h-screen lg:w-[32rem] lg:shrink-0 lg:border-t-0 lg:border-l lg:shadow-none"
+    bind:this={aside}
+  >
+    {#await import('./python/PythonPanel.svelte') then { default: PythonPanel }}
+      <PythonPanel {part} onpick={id => (part = id)} onclose={closePython} />
+    {/await}
+  </aside>
+{/if}
+</div>

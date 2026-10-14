@@ -35,7 +35,7 @@
   </div>
 
   {#if session.viewStep !== null}
-    <div class="mt-4 rounded-md border border-line bg-canvas px-3 py-2.5">
+    <div class="mt-4 rounded-md border border-line bg-canvas px-3 py-2.5" data-py="training">
       <Timeline
         steps={session.snapshots}
         value={session.viewStep}
@@ -50,7 +50,7 @@
     <p class="mt-3 text-sm text-danger" role="alert">{session.explainError}</p>
   {/if}
 
-  <section class="mt-5" aria-labelledby="map-title">
+  <section class="mt-5" data-py="attention" aria-labelledby="map-title">
     <h3 id="map-title" class="text-xs font-semibold tracking-wide text-muted uppercase">Where it looked, and what pushed it</h3>
     <p class="mt-1 text-xs text-muted">
       Each column is a character the model could see. The coloured rows are attention in the last layer: brighter means more.
@@ -75,7 +75,7 @@
   </section>
 
   <div class="mt-6 grid gap-6 md:grid-cols-2">
-    <section aria-labelledby="topk-title">
+    <section data-py="softmax" aria-labelledby="topk-title">
       <h3 id="topk-title" class="text-xs font-semibold tracking-wide text-muted uppercase">What else it considered</h3>
       <p class="mt-1 text-xs text-muted">Compare with another character to see why the model preferred {label(tg.c)}.</p>
       {#if result}

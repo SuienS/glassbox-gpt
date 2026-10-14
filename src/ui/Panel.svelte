@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  let { id, step, current = false, title, note, actions, children }: {
+  let { id, py, step, current = false, title, note, actions, children }: {
     id: string;
+    py?: string; // the matching part of microgpt.py
+
     step?: number;
     current?: boolean; // the step to do next
     title: string;
@@ -12,7 +14,7 @@
   } = $props();
 </script>
 
-<section {id} aria-labelledby="{id}-title" class="rounded-lg border border-line bg-panel">
+<section {id} data-py={py} aria-labelledby="{id}-title" class="rounded-lg border border-line bg-panel">
   <header class="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
     <div class="flex gap-2.5">
       {#if step}
