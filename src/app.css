@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+:root {
+  --canvas: var(--color-stone-50);
+  --panel: var(--color-white);
+  --ink: var(--color-stone-900);
+  --muted: var(--color-stone-500);
+  --line: var(--color-stone-200);
+  --accent: oklch(0.5 0.13 255);
+  --accent-ink: var(--color-white);
+  --danger: var(--color-red-700);
+  --warn: var(--color-amber-700);
+  color-scheme: light;
+}
+
+/* data-theme is set before first paint (index.html) from the saved choice or the system setting */
+:root[data-theme='dark'] {
+  --canvas: var(--color-stone-950);
+  --panel: var(--color-stone-900);
+  --ink: var(--color-stone-100);
+  --muted: var(--color-stone-400);
+  --line: var(--color-stone-800);
+  --accent: oklch(0.72 0.12 255);
+  --accent-ink: var(--color-stone-950);
+  --danger: var(--color-red-400);
+  --warn: var(--color-amber-400);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+}
+
+@layer base {
+  body {
+    @apply bg-canvas text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-line bg-panel px-3 py-1.5
+      text-sm font-medium hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-transparent bg-accent text-accent-ink hover:bg-accent/90 disabled:hover:bg-accent;
+  }
+  .input {
+    @apply w-full rounded-md border border-line bg-canvas px-2 py-1 font-mono text-sm tabular-nums
+      disabled:opacity-60 aria-invalid:border-danger;
+  }
+}
+
+/* driver.js popovers, in the app's colours. driver.css loads later, so these need the extra class. */
+.driver-popover.tour {
+  @apply max-w-80 rounded-lg border border-line bg-panel p-4 font-sans text-ink shadow-lg;
+}
+.driver-popover.tour .driver-popover-title {
+  @apply text-sm font-semibold;
+}
+.driver-popover.tour .driver-popover-description {
+  @apply text-sm text-muted;
+}
+.driver-popover.tour .driver-popover-progress-text {
+  @apply text-xs text-muted;
+}
+.driver-popover.tour .driver-popover-close-btn {
+  @apply text-muted hover:text-ink focus-visible:text-ink;
+}
+.driver-popover.tour .driver-popover-footer-btn {
+  @apply rounded-md border border-line bg-panel px-2.5 py-1 text-xs font-medium text-ink [text-shadow:none] hover:bg-canvas focus:bg-panel;
+}
+.driver-popover.tour .driver-popover-next-btn {
+  @apply border-transparent bg-accent text-accent-ink hover:bg-accent/90 focus:bg-accent;
+}
+.driver-popover.tour .driver-popover-footer-btn:focus-visible,
+.driver-popover.tour .driver-popover-close-btn:focus-visible {
+  @apply outline-2 outline-offset-2 outline-accent;
+}
+.driver-popover.tour .driver-popover-arrow-side-left { border-left-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-right { border-right-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-top { border-top-color: var(--panel); }
+.driver-popover.tour .driver-popover-arrow-side-bottom { border-bottom-color: var(--panel); }
