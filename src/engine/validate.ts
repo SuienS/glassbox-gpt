@@ -10,7 +10,7 @@ export const DESKTOP: Limits = {
   nEmbd: 48, nHead: 8, nLayer: 3, blockSize: 32, numSteps: 5000, bytes: 2 * 1024 * 1024, lines: 50_000, trials: 50,
 };
 export const MOBILE: Limits = {
-  nEmbd: 16, nHead: 4, nLayer: 1, blockSize: 16, numSteps: 1000, bytes: 1024 * 1024, lines: 20_000, trials: 20,
+  nEmbd: 16, nHead: 4, nLayer: 1, blockSize: 16, numSteps: 1000, bytes: 1024 * 1024, lines: 50_000, trials: 20,
 };
 export const VOCAB_WARN = 100;
 
@@ -28,8 +28,11 @@ export function validateText(text: string, blockSize: number, limits: Limits = D
   if (docs.length === 0) errors.push('No non-empty lines found.');
   if (docs.length > limits.lines) errors.push(`Too many lines (${docs.length.toLocaleString('en')}; maximum ${limits.lines.toLocaleString('en')}).`);
   const warnings: string[] = [];
-  if (vocab > VOCAB_WARN) warnings.push(`${vocab} distinct characters will slow training.`);
-  if (truncated) warnings.push(`${truncated} ${truncated === 1 ? 'line exceeds' : 'lines exceed'} the block size and will be cut.`);
+  if (vocab > VOCAB_WARN) warnings.push(`${vocab.toLocaleString('en')} distinct characters will slow training.`);
+  if (truncated) {
+    const n = truncated.toLocaleString('en');
+    warnings.push(`${n} ${truncated === 1 ? 'line exceeds' : 'lines exceed'} the block size and will be cut.`);
+  }
   return { docs, lines: docs.length, vocab, truncated, errors, warnings };
 }
 
