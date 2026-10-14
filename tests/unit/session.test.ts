@@ -216,3 +216,19 @@ test('the timeline reuses cached steps and keeps one request of each kind in fli
   expect(s.explaining || s.deleting).toBe(false);
   expect(asked()).toHaveLength(4);
 });
+
+test('a failed explainer clears the busy state and says why', () => {
+  const sent: ToExplain[] = [];
+  const s = new Session(() => {}, m => { sent.push(m); });
+  s.init(run);
+  s.fromTrain({ type: 'ready', numParams: 10, chars: ['a', 'b'], bos: 2 });
+  s.pin({ step: 0, temperature: 1, tokens: [2, 0, 1, 2], text: 'ab' }, 2);
+  expect(s.explaining).toBe(true);
+  s.explainerFailed('The explanation worker failed to load.');
+  expect(s.explaining || s.deleting).toBe(false);
+  expect(s.explainError).toMatch(/failed to load/);
+  // A late reply to the abandoned request is ignored.
+  const id = (sent.find(m => m.type === 'explain') as { id: number }).id;
+  s.fromExplain({ type: 'error', id, message: 'late' });
+  expect(s.explainError).toMatch(/failed to load/);
+});

@@ -23,6 +23,8 @@
   const top = $derived(result && tg ? candidates(result.logits, tg.c, tg.temperature) : []);
   const k = $derived(tg ? Math.min(DELETION_K, tg.t) : 0);
   const verdict = $derived(tg ? deletionVerdict(tg.t, k, session.deletion) : 'none');
+  const others = $derived(Array.from({ length: session.vocabSize }, (_, tok) => tok).filter(tok => tok !== tg?.c));
+
   function compare(tok: number | null) {
     if (tok !== null) track('compare');
     session.compare(tok);
@@ -32,8 +34,6 @@
     if (step !== tg?.step) track('timeline');
     session.showStep(step);
   }
-
-  const others = $derived(Array.from({ length: session.vocabSize }, (_, tok) => tok).filter(tok => tok !== tg?.c));
 </script>
 
 {#if tg}

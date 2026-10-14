@@ -9,7 +9,13 @@
 
   let { session }: { session: Session } = $props();
 
+  // A textarea holding tens of thousands of lines takes most of a second to lay out on a phone,
+  // so long texts are shown in part.
+  const PREVIEW_LINES = 1000;
+
   let text = $state('');
+  let shown = $state(''); // what the textarea holds: all of `text`, or its first lines
+  let partial = $state(false);
   let name = $state('');
   let checked = $state(''); // trails `text` while typing, so big texts aren't re-validated per keystroke
   let error = $state<string | null>(null);
@@ -27,13 +33,19 @@
 
   function load(value: string, label: string) {
     clearTimeout(timer);
+    shown = value.split('\n').slice(0, PREVIEW_LINES).join('\n');
+    partial = value.trimEnd().length > shown.length;
+    if (!partial) shown = value;
     text = checked = value;
     name = label;
     error = null;
   }
 
-  function edit() {
+  function edit(e: Event & { currentTarget: HTMLTextAreaElement }) {
+    text = e.currentTarget.value;
+    partial = false;
     name = 'Your text';
+    error = null;
     clearTimeout(timer);
     timer = setTimeout(() => (checked = text), 250);
   }
@@ -99,9 +111,12 @@
   aria-label="Training text"
   placeholder="Or paste your own: one example per line, such as names, words or short phrases."
   spellcheck="false"
-  bind:value={text}
+  bind:value={shown}
   oninput={edit}
 ></textarea>
+{#if partial}
+  <p class="mt-1 text-xs text-muted">Showing the first {PREVIEW_LINES.toLocaleString('en')} lines. Editing keeps only these.</p>
+{/if}
 
 <div class="mt-2 min-h-5 space-y-1 text-xs" aria-live="polite">
   {#if error}
