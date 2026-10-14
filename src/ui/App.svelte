@@ -151,6 +151,11 @@
     </Panel>
   </div>
 </main>
+
+<footer class="mx-auto max-w-7xl px-4 pb-6 text-xs text-muted">
+  Built by <a class="text-accent hover:underline" href="https://ravidusilva.com/" target="_blank" rel="noopener">Ravidu Silva</a>
+  · <a class="text-accent hover:underline" href="https://github.com/SuienS/glassbox-gpt" target="_blank" rel="noopener">Source on GitHub</a>
+</footer>
 </div>
 
 {#if pythonOpen}
