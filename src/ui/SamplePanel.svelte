@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Sample, Session } from './session.svelte';
   import { charLabel, needsShaping } from './lib/format';
+  import { track } from './track';
 
   let { session }: { session: Session } = $props();
 
@@ -9,6 +10,11 @@
 
   const pinned = (s: Sample, k: number) => session.target?.tokens === s.tokens && session.target.t === k - 1;
   const spoken = (ch: string) => (ch === ' ' ? 'space' : ch);
+
+  function explain(s: Sample, k: number) {
+    track('explain-open');
+    session.pin(s, k);
+  }
 
   // One tab stop for the whole list; arrow keys move between characters (roving tabindex).
   let list = $state<HTMLOListElement>();
@@ -86,7 +92,7 @@
                 data-k={k}
                 onfocus={() => (cursor = { sample: s, k })}
                 onkeydown={move}
-                onclick={() => session.pin(s, k)}
+                onclick={() => explain(s, k)}
               >end</button>
             {:else}
               {@const ch = session.chars[tok]}
@@ -101,7 +107,7 @@
                 data-k={k}
                 onfocus={() => (cursor = { sample: s, k })}
                 onkeydown={move}
-                onclick={() => session.pin(s, k)}
+                onclick={() => explain(s, k)}
               >{charLabel(ch)}</button>
             {/if}
           {/each}

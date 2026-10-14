@@ -13,19 +13,18 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: var(--color-stone-950);
-    --panel: var(--color-stone-900);
-    --ink: var(--color-stone-100);
-    --muted: var(--color-stone-400);
-    --line: var(--color-stone-800);
-    --accent: oklch(0.72 0.12 255);
-    --accent-ink: var(--color-stone-950);
-    --danger: var(--color-red-400);
-    --warn: var(--color-amber-400);
-    color-scheme: dark;
-  }
+/* data-theme is set before first paint (index.html) from the saved choice or the system setting */
+:root[data-theme='dark'] {
+  --canvas: var(--color-stone-950);
+  --panel: var(--color-stone-900);
+  --ink: var(--color-stone-100);
+  --muted: var(--color-stone-400);
+  --line: var(--color-stone-800);
+  --accent: oklch(0.72 0.12 255);
+  --accent-ink: var(--color-stone-950);
+  --danger: var(--color-red-400);
+  --warn: var(--color-amber-400);
+  color-scheme: dark;
 }
 
 @theme inline {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import LossChart from './LossChart.svelte';
   import type { Session } from './session.svelte';
+  import { track } from './track';
   import { formatDuration, formatMs } from './lib/format';
 
   let { session }: { session: Session } = $props();
@@ -21,8 +22,12 @@
   });
 
   function toggle() {
-    if (session.status === 'running') session.pause();
-    else session.start();
+    if (session.status === 'running') {
+      session.pause();
+    } else {
+      if (session.step === 0) track('train-start');
+      session.start();
+    }
   }
 </script>
 

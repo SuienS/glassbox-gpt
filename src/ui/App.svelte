@@ -7,7 +7,9 @@
   import TrainPanel from './TrainPanel.svelte';
   import { saveDevice } from './lib/limits';
   import type { Session } from './session.svelte';
+  import { theme } from './theme.svelte';
   import { startTour, tourSeen } from './tour';
+  import { track } from './track';
 
   let { session }: { session: Session } = $props();
 
@@ -30,6 +32,16 @@
       document.removeEventListener('focusin', pick);
     };
   });
+
+  function openPython() {
+    track('python-open');
+    pythonOpen = true;
+  }
+
+  function replayTour() {
+    track('tour-replay');
+    startTour();
+  }
 
   function closePython() {
     pythonOpen = false;
@@ -65,14 +77,29 @@
       <p class="text-sm text-muted">A tiny GPT trained in your browser, with a reason for every character it writes.</p>
     </div>
     <div class="ml-auto flex gap-2">
-      <button class="btn px-2.5 py-1 text-xs" onclick={startTour}>Tour</button>
+      <button
+        class="btn px-2 py-1"
+        onclick={() => theme.toggle()}
+        aria-label={theme.current === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={theme.current === 'dark' ? 'Light mode' : 'Dark mode'}
+      >
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          {#if theme.current === 'dark'}
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+          {:else}
+            <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+          {/if}
+        </svg>
+      </button>
+      <button class="btn px-2.5 py-1 text-xs" onclick={replayTour}>Tour</button>
       <button
         id="python-toggle"
         bind:this={toggle}
         class="btn px-2.5 py-1 text-xs aria-expanded:border-accent aria-expanded:text-accent"
         aria-expanded={pythonOpen}
         aria-controls="python"
-        onclick={() => (pythonOpen ? closePython() : (pythonOpen = true))}
+        onclick={() => (pythonOpen ? closePython() : openPython())}
       >Python</button>
     </div>
   </div>

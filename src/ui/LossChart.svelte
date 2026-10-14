@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import uPlot from 'uplot';
   import 'uplot/dist/uPlot.min.css';
+  import { theme } from './theme.svelte';
 
   let { losses, smoothed }: { losses: number[]; smoothed: number[] } = $props();
 
@@ -48,13 +49,16 @@
     build();
     const resize = new ResizeObserver(() => plot?.setSize({ width: el.clientWidth, height: HEIGHT }));
     resize.observe(el);
-    const scheme = matchMedia('(prefers-color-scheme: dark)');
-    scheme.addEventListener('change', build);
     return () => {
       resize.disconnect();
-      scheme.removeEventListener('change', build);
       plot?.destroy();
     };
+  });
+
+  // Canvas colours don't follow CSS, so redraw when the theme changes.
+  $effect(() => {
+    void theme.current;
+    untrack(() => plot && build());
   });
 
   $effect(() => {

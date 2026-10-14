@@ -4,8 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Train a tiny GPT in your browser and see why it writes each character." />
     <title>Glass-box GPT</title>
+    <meta name="description" content="Train a tiny GPT in your browser and see why it writes each character." />
+    <link rel="canonical" href="https://ravidusilva.com/glassbox-gpt/" />
+    <meta name="theme-color" content="#fafaf9" />
+    <script>
+      // Set the theme before the first paint so a saved choice doesn't flash (kept in sync by src/ui/theme.svelte.ts)
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem('glassbox-gpt:theme'); } catch (e) {}
+        var dark = saved === 'light' || saved === 'dark' ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]').content = dark ? '#0c0a09' : '#fafaf9';
+      })();
+    </script>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ravidusilva.com/glassbox-gpt/" />
+    <meta property="og:title" content="Glass-box GPT" />
+    <meta property="og:description" content="Train a tiny GPT in your browser and see why it writes each character." />
+    <meta property="og:image" content="https://ravidusilva.com/glassbox-gpt/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Glass-box GPT: an attention heatmap and saliency bars explaining one character of a generated name." />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Cookie-free page and event counts; see src/ui/track.ts -->
+    <script data-goatcounter="https://ravidusilva.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
   </head>
   <body>
     <div id="app"></div>

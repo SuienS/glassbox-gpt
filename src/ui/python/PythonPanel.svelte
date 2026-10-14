@@ -3,6 +3,9 @@
   import source from '../../../reference/microgpt.py?raw';
   import { PARTS, partById } from './parts';
 
+  // The exact revision shown here, so the line numbers match.
+  const SOURCE = 'https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95/14fb038816c7aae0bb9342c2dbf1a51dd134a5ff';
+
   let { part, onpick, onclose }: {
     part: string | null;
     onpick: (id: string) => void;
@@ -39,7 +42,8 @@
     <div>
       <h2 class="text-sm font-semibold">microgpt.py</h2>
       <p class="mt-0.5 text-xs text-muted">
-        Andrej Karpathy's original, unchanged. This app runs the same algorithm in TypeScript.
+        <a class="text-accent hover:underline" href={SOURCE} target="_blank" rel="noopener">Andrej Karpathy's original</a>,
+        unchanged. This app runs the same algorithm in TypeScript.
         Hover or focus a part of the page to see its lines.
       </p>
     </div>

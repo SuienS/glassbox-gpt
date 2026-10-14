@@ -5,6 +5,7 @@
   import { formatBytes } from './lib/format';
   import { PRESETS, loadPreset } from './lib/presets';
   import type { Session } from './session.svelte';
+  import { track } from './track';
 
   let { session }: { session: Session } = $props();
 
@@ -68,6 +69,7 @@
     clearTimeout(timer);
     checked = text;
     if (!report || report.errors.length || running) return;
+    if (!PRESETS.some(p => p.label === name)) track('custom-dataset');
     session.useDocs(name || 'Your text', report.docs);
   }
 

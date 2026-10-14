@@ -6,6 +6,7 @@
   import { candidates, deletionVerdict } from './lib/explain';
   import { charLabel } from './lib/format';
   import { DELETION_K, type Session } from './session.svelte';
+  import { track } from './track';
 
   let { session }: { session: Session } = $props();
 
@@ -22,6 +23,16 @@
   const top = $derived(result && tg ? candidates(result.logits, tg.c, tg.temperature) : []);
   const k = $derived(tg ? Math.min(DELETION_K, tg.t) : 0);
   const verdict = $derived(tg ? deletionVerdict(tg.t, k, session.deletion) : 'none');
+  function compare(tok: number | null) {
+    if (tok !== null) track('compare');
+    session.compare(tok);
+  }
+
+  function replay(step: number) {
+    if (step !== tg?.step) track('timeline');
+    session.showStep(step);
+  }
+
   const others = $derived(Array.from({ length: session.vocabSize }, (_, tok) => tok).filter(tok => tok !== tg?.c));
 </script>
 
@@ -41,7 +52,7 @@
         value={session.viewStep}
         sampleStep={tg.step}
         smoothed={session.smoothed}
-        onchange={step => session.showStep(step)}
+        onchange={replay}
       />
     </div>
   {/if}
@@ -86,7 +97,7 @@
             cPrime={session.cPrime}
             temperature={tg.temperature}
             {label}
-            onCompare={tok => session.compare(tok)}
+            onCompare={compare}
           />
         </div>
         <label class="mt-3 flex items-center gap-2 text-xs text-muted">
@@ -94,7 +105,7 @@
           <select
             class="rounded border border-line bg-panel py-0.5 pr-1 font-mono text-xs text-ink"
             value={session.cPrime ?? ''}
-            onchange={e => session.compare(e.currentTarget.value === '' ? null : Number(e.currentTarget.value))}
+            onchange={e => compare(e.currentTarget.value === '' ? null : Number(e.currentTarget.value))}
           >
             <option value="">nothing</option>
             {#each others as tok (tok)}<option value={tok}>{label(tok)}</option>{/each}
