@@ -80,7 +80,7 @@ test('stale explainer replies are dropped; errors land on the request that faile
   s.sample(5, 1);
   const sample = s.samples.find(x => x.tokens.length > 2)!;
   s.pin(sample, 2);
-  s.explain(0, sample.tokens[1]);
+  s.compare((s.target!.c + 1) % s.vocabSize);
   deliver();
   expect(toExplain.filter(m => m.type === 'explain')).toHaveLength(2);
   expect(s.explanation!.result.contrast).toBeDefined();
@@ -159,4 +159,28 @@ test('limits follow the chosen device', () => {
   expect(s.limits).toBe(DESKTOP);
   s.device = 'mobile';
   expect(s.limits).toBe(MOBILE);
+});
+
+test('a rival character adds a contrast until it is cleared or the pin changes', () => {
+  const { s, toExplain, deliver } = wired();
+  s.init(run);
+  s.sample(5, 1);
+  const sample = s.samples.find(x => x.tokens.length > 3)!;
+  s.pin(sample, 3);
+  const rival = (s.target!.c + 1) % s.vocabSize;
+  s.compare(s.target!.c); // comparing with itself is ignored
+  expect(s.cPrime).toBeNull();
+  s.compare(rival);
+  deliver();
+  expect(toExplain.filter(m => m.type === 'explain').at(-1)).toMatchObject({ cPrime: rival });
+  expect(s.explanation!.result.contrast).toHaveLength(3);
+  expect(s.explanation!.result.logitGap).toBeTypeOf('number');
+
+  s.compare(null);
+  deliver();
+  expect(s.explanation!.result.contrast).toBeUndefined();
+
+  s.compare(rival);
+  s.pin(sample, 2);
+  expect(s.cPrime).toBeNull();
 });

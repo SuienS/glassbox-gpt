@@ -14,6 +14,7 @@ export interface Target { step: number; temperature: number; tokens: number[]; t
 export interface Deletion { step: number; p: number; salientDrop: number; randomDrop: number; randomStd: number }
 
 const MAX_SAMPLES = 50;
+export const DELETION_K = 2;
 
 const sameConfig = (a: Config, b: Config) =>
   a.nEmbd === b.nEmbd && a.nHead === b.nHead && a.nLayer === b.nLayer && a.blockSize === b.blockSize;
@@ -38,6 +39,7 @@ export class Session {
   samples = $state.raw<Sample[]>([]); // newest first
 
   target = $state.raw<Target | null>(null);
+  cPrime = $state<number | null>(null); // the rival character for "why c and not c'"
   explanation = $state.raw<{ step: number; result: Explanation } | null>(null);
   deletion = $state.raw<Deletion | null>(null);
   explaining = $state(false);
@@ -121,8 +123,16 @@ export class Session {
     this.runDeletion(sample.step);
   }
 
+  // Compare the pinned character against cPrime, or stop comparing with null.
+  compare(cPrime: number | null) {
+    if (!this.target || cPrime === this.target.c) return;
+    this.cPrime = cPrime;
+    this.explain(this.explanation?.step ?? this.target.step);
+  }
+
   unpin() {
     this.target = null;
+    this.cPrime = null;
     this.explanation = null;
     this.deletion = null;
     this.explaining = this.deleting = false;
@@ -130,13 +140,13 @@ export class Session {
     this.#latest = { explain: 0, deletion: 0 };
   }
 
-  explain(step: number, cPrime?: number) {
+  explain(step: number) {
     const tg = this.target;
     if (!tg) return;
     this.explaining = true;
     this.explainError = null;
     const id = this.#latest.explain = ++this.#nextId;
-    this.#explain({ type: 'explain', id, step, tokens: tg.tokens, t: tg.t, c: tg.c, cPrime });
+    this.#explain({ type: 'explain', id, step, tokens: tg.tokens, t: tg.t, c: tg.c, cPrime: this.cPrime ?? undefined });
   }
 
   runDeletion(step: number) {
@@ -147,7 +157,7 @@ export class Session {
     const id = this.#latest.deletion = ++this.#nextId;
     this.#explain({
       type: 'deletion', id, step, tokens: tg.tokens, t: tg.t, c: tg.c,
-      k: 2, trials: Math.min(20, this.limits.trials), seed: 1,
+      k: DELETION_K, trials: Math.min(20, this.limits.trials), seed: 1,
     });
   }
 
